@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block page_content %}
+{% if courses %}
+    <ul>
+    {% for course in courses %}
+        <li><a href="{{ url_for('main.departments', name=course.name) }}">{{ course.name }}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
+m
+{% endblock %}

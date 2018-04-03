@@ -1,0 +1,18 @@
+{%  extends 'base.html' %}
+
+{% block page_content %}
+<div class="page-header">
+    {% if current_user.is_authenticated %}
+    <h1>Welcome {{ current_user.first }} {{ current_user.last }}</h1>
+    {% else %}
+    <h1>Welcome!</h1>
+    {% endif %}
+</div>
+<div class="container">
+        {{ wtf.quick_form(form,
+                          action=url_for('main.search'),
+                          form_type='horizontal',
+                          horizontal_columns=('md', 2, 8),
+                          method='GET') }}
+</div>
+{%  endblock %}
