@@ -1,0 +1,19 @@
+<ul class="list-unstyled reviews">
+    {% for review in course.get_reviews() %}
+        <li class="review">
+            <div class="review-date">
+                <p>{{ review.written_on.strftime('%B %d, %Y') }}</p>
+            </div>
+
+            <div class="review-teacher">
+                <p><a href="{{ url_for('main.teacher', uni=review.t_uni) }}">{{ review.get_teacher().name }}</a></p>
+            </div>
+            <div class="review-general">
+                <p>{{ review.general }}</p>
+            </div>
+            <div class="review-workload">
+                <p>{{ review.workload }}</p>
+            </div>
+        </li>
+    {% endfor %}
+</ul>

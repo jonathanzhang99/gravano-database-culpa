@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block page_content %}
+
+    <div class="page-header">
+        <h1>{{ department.name }}</h1>
+    </div>
+    <div class="col-md-6">
+        <h2>Classes</h2>
+        <ul>
+            {% for c in department.get_courses() %}
+                <li><a href="{{ url_for('main.courses', cid=c.c_id) }}">{{ c.name }}</a> </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <h2>Teachers</h2>
+        <ul>
+            {% for t in department.get_teachers() %}
+                <li><a href="{{ url_for('main.teacher', uni=t.uni) }}">{{ t.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

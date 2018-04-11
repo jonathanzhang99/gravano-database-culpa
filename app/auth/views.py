@@ -10,6 +10,7 @@ from ..models import User
 def home():
     return redirect(url_for('main.home'))
 
+
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
@@ -26,11 +27,12 @@ def register():
         return redirect(url_for('main.home'))
     return render_template('auth/register.html', form=form)
 
+
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
     if form.validate_on_submit():
-        u = User.find(form.uni.data)
+        u = next(User.find(form.uni.data))
         if u is not None and u.verify_password(form.password.data):
             login_user(u, form.remember.data)
             return redirect(request.args.get('next') or url_for('main.home'))

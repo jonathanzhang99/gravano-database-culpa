@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>{{ teacher.name }}</h1>
+    </div>
+    <div class="container">
+        <ul>
+            {% for course in teacher.get_courses() %}
+            <li><a href="{{ url_for('main.courses', cid=course.c_id )}}">{{ course.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}

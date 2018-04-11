@@ -8,7 +8,7 @@ from . import db, login_manager
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.find(user_id)
+    return next(User.find(user_id))
 
 
 class User(UserMixin):
@@ -93,6 +93,14 @@ class Review(object):
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         ''', (self.c_id, self.uni, self.t_uni, self.general, self.workload, self.sentiment_score, self.written_on))
 
+    def get_teacher(self):
+        cur = db.engine.execute('SELECT * FROM teachers t WHERE t.uni = %s', (self.t_uni, ))
+
+        if cur.rowcount == 0:
+            return None
+
+        return Teacher(*next(cur))
+
     @staticmethod
     def find(val, field='r_id'):
         query = 'SELECT * FROM reviews WHERE {} = %s'.format(field)
@@ -103,14 +111,8 @@ class Review(object):
             return None
 
         for (r_id, c_id, uni, t_uni, g_content, w_content, s_score, written_on) in cur:
-            yield Review(c_id,
-                         uni,
-                         t_uni,
-                         g_content,
-                         w_content,
-                         s_score,
-                         written_on,
-                         r_id)
+            yield Review(c_id, uni, t_uni, g_content, w_content, s_score, written_on, r_id)
+
         cur.close()
 
 
@@ -123,6 +125,24 @@ class Department(object):
     def save(self):
         db.engine.execute('INSERT INTO departments VALUES (%s, %s)', (self.did, self.name, self.abbrev))
 
+    def get_courses(self):
+        cur = db.engine.execute('''SELECT c.c_id, c.name, c.abbrev FROM courses c, course_department d 
+                                   WHERE c.c_id = d.c_id AND d.d_id = %s
+                                ''', (self.did, ))
+        for (cid, name, abbrev) in cur:
+            yield Course(cid, name, abbrev, self)
+
+    def get_teachers(self):
+        cur = db.engine.execute(
+            ''' SELECT t.uni, t.name 
+                FROM teachers t, teachers_department d
+                WHERE d.d_id = %s AND t.uni = d.uni
+                ORDER BY t.name ASC
+            ''', (self.did,))
+
+        for (uni, name) in cur:
+            yield Teacher(uni, name)
+
     @staticmethod
     def find(val, field='d_id'):
         query = 'SELECT * FROM departments WHERE {} = %s'.format(field)
@@ -131,9 +151,14 @@ class Department(object):
         if cur.rowcount == 0:
             return None
 
-        if cur.rowcount == 1:
-            return Department(*cur.fetchone)
+        for (did, name, abbrev) in cur:
+            yield Department(did, name, abbrev)
 
+        cur.close()
+
+    @staticmethod
+    def find_all():
+        cur = db.engine.execute('SELECT * FROM departments')
         for (did, name, abbrev) in cur:
             yield Department(did, name, abbrev)
 
@@ -207,8 +232,33 @@ class Course(object):
         self.c_id = c_id
         self.name = name
         self.abbrev = abbrev
-        self.departments = departments
-        self.teachers = teachers
+        self.departments = []
+        self.teachers = []
+        self.reviews = []
+
+        if type(departments) == list:
+            for d in departments:
+                if type(d) != Department:
+                    raise TypeError('input list departments must all be of type Department')
+
+            self.departments = departments
+        elif type(departments) == Department:
+            self.departments.append(departments)
+        elif departments:
+            # allow for departments to be None
+            raise TypeError('input departments must be of type Department or list of Department')
+
+        if type(teachers) == list:
+            for t in teachers:
+                if type(t) != Teacher:
+                    raise TypeError('input list teachers must all be of type Teacher')
+
+            self.teachers = teachers
+        elif type(teachers) == Teacher:
+            self.teachers.append(teachers)
+        elif teachers:
+            # allow for teachers to be None
+            raise TypeError('input teachers must be of type Teacher or list of Teacher')
 
     def get_departments(self):
         if not self.departments:
@@ -222,8 +272,20 @@ class Course(object):
             self.teachers = [next(Teacher.find(uni)) for (uni,) in cur]
         return self.teachers
 
+    def get_reviews(self):
+        if not self.reviews:
+            cur = db.engine.execute(
+                ''' SELECT * 
+                    FROM reviews r 
+                    WHERE r.c_id = %s
+                    ORDER BY r.written_on DESC 
+                '''
+                , (self.c_id, ))
+            for (_, cid, uni, t_uni, g_content, w_content, score, date) in cur:
+                yield Review(cid, uni, t_uni.strip(), g_content, w_content, score, date)
+
     @staticmethod
-    def find(val, field='r_id'):
+    def find(val, field='c_id'):
         query = 'SELECT * FROM courses WHERE {} = %s'.format(field)
 
         cur = db.engine.execute(query, (val,))

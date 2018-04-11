@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Departments</h1>
+</div>
+<div class="container">
+    <ul>
+        {% for d in departments %}
+{#        <li><a href="/departments/{{ ''.join([c.lower() for c in d.name if c.isalpha() ]) }}">d.name</a></li>#}
+            <li><a href="{{ url_for('main.department', did=d.did) }}">{{ d.name }}</a></li>
+        {% endfor %}
+    </ul>
+
+</div>
+{% endblock %}

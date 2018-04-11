@@ -1,0 +1,16 @@
+ul.reviews {
+    margin-top: 16px;
+}
+
+ul.reviews > li.review {
+    padding: 8px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+div.review-teacher {
+    font-weight: bold;
+}
+
+div.review-date {
+    float: right;
+}

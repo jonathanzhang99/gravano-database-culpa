@@ -4,9 +4,9 @@
 {% if courses %}
     <ul>
     {% for course in courses %}
-        <li><a href="{{ url_for('main.departments', name=course.name) }}">{{ course.name }}</a></li>
+        <li><a href="{{ url_for('main.courses', cid=course.c_id) }}">{{ course.name }}</a></li>
     {% endfor %}
     </ul>
 {% endif %}
-m
+
 {% endblock %}
