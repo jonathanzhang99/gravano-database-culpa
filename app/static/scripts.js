@@ -24,10 +24,7 @@ $(document).ready(function() {
                     console.log(btn);
                     btn.attr('value', value)
                 });
-                // console.log(data[button_name]);
-                // console.log(`${button_value.split(' ')[0]} ${data[button_name]}`)
-                // let btn = $(`input#${button_name}-${data['rid']}`)
-                // btn.text(`${button_value.split(' ')[0]} ${data[button_name]}`)
+
             },
 
             beforeSend: (xhr, settings) => {

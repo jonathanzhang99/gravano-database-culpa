@@ -105,17 +105,14 @@ class Vote(object):
 
 
 class Review(object):
-    def __init__(self, c_id, uni, t_uni, general, workload, sentiment_score=0, written_on=None, r_id=None):
+    def __init__(self, c_id, uni, t_uni, general, workload, sentiment_score=0, written_on=datetime.now(), r_id=None):
         self.c_id = c_id
         self.uni = uni
         self.t_uni = t_uni
         self.general = general
         self.workload = workload
         self.sentiment_score = sentiment_score
-        if written_on:
-            self.written_on = written_on
-        else:
-            self.written_on = datetime.now()
+        self.written_on = written_on
         self.r_id = r_id
 
     def save(self):
