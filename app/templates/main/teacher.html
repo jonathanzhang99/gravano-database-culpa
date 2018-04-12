@@ -5,10 +5,14 @@
         <h1>{{ teacher.name }}</h1>
     </div>
     <div class="container">
+    <h2>Courses</h2>
         <ul>
             {% for course in teacher.get_courses() %}
-            <li><a href="{{ url_for('main.courses', cid=course.c_id )}}">{{ course.name }}</a></li>
+            <li><a href="{{ url_for('main.course', cid=course.c_id )}}">{{ course.name }}</a></li>
             {% endfor %}
         </ul>
+    </div>
+    <div class="container">
+        {% include 'reviews.html' %}
     </div>
 {% endblock %}

@@ -53,6 +53,16 @@ class User(UserMixin):
     def get_reviews(self):
         return Review.find(self.uni, 'uni')
 
+    def get_vote(self, rid):
+        return Vote.find(self.uni, rid)
+
+    def vote(self, rid, liked):
+        v = Vote(self.uni, rid, liked)
+        v.save()
+
+    def update_vote(self, rid, liked):
+        db.engine.execute('UPDATE votes SET liked = %s WHERE (uni, r_id) = (%s, %s)', (liked, self.uni, rid))
+
     @staticmethod
     def find(val, field='uni'):
 
@@ -71,6 +81,27 @@ class User(UserMixin):
                        school=school,
                        num_reviews=num_reviews)
         cur.close()
+
+class Vote(object):
+    def __init__(self, uni, r_id, liked, voted_on=datetime.now()):
+        self.uni = uni
+        self.r_id = r_id
+        self.liked = liked
+        self.voted_on = voted_on
+
+    def save(self):
+        db.engine.execute('INSERT INTO votes VALUES (%s, %s, %s, %s)', (self.uni, self.r_id, self.voted_on, self.liked))
+
+    @staticmethod
+    def find(uni, rid):
+        cur = db.engine.execute('SELECT * FROM votes v WHERE v.uni = %s AND v.r_id = %s', (uni, rid))
+
+        if cur.rowcount == 0:
+            return None
+
+        (uni, r_id, voted_on, liked) = cur.fetchone()
+        cur.close()
+        return Vote(uni, r_id, liked, voted_on)
 
 
 class Review(object):
@@ -98,12 +129,33 @@ class Review(object):
 
         if cur.rowcount == 0:
             return None
+        t = Teacher(*next(cur))
+        cur.close()
+        return t
 
-        return Teacher(*next(cur))
+    def get_course(self):
+        cur = db.engine.execute('SELECT * FROM courses c WHERE c.c_id = %s', (self.c_id))
+
+        if cur.rowcount == 0:
+            return None
+
+        c = Course(*next(cur))
+        cur.close()
+        return c
+
+    def get_votes(self):
+        cur = db.engine.execute('SELECT COUNT(*) FROM votes v WHERE v.r_id = %s AND liked = TRUE', (self.r_id,))
+        agree = 0 if cur.rowcount == 0 else cur.fetchone()[0]
+
+        cur = db.engine.execute('SELECT COUNT(*) FROM votes v WHERE v.r_id = %s AND liked = FALSE', (self.r_id,))
+        disagree = 0 if cur.rowcount == 0 else cur.fetchone()[0]
+        cur.close()
+
+        return agree, disagree
 
     @staticmethod
     def find(val, field='r_id'):
-        query = 'SELECT * FROM reviews WHERE {} = %s'.format(field)
+        query = '''SELECT * FROM reviews WHERE {} = %s ORDER BY written_on DESC'''.format(field)
 
         cur = db.engine.execute(query, (val,))
 
@@ -132,6 +184,8 @@ class Department(object):
         for (cid, name, abbrev) in cur:
             yield Course(cid, name, abbrev, self)
 
+        cur.close()
+
     def get_teachers(self):
         cur = db.engine.execute(
             ''' SELECT t.uni, t.name 
@@ -142,6 +196,8 @@ class Department(object):
 
         for (uni, name) in cur:
             yield Teacher(uni, name)
+
+        cur.close()
 
     @staticmethod
     def find(val, field='d_id'):
@@ -203,16 +259,31 @@ class Teacher(object):
         # TODO: Did not account for the fact that teachers can teach the same class in different semesters
 
         if not self.courses:
-            cur = db.engine.execute('SELECT t.c_id FROM teaches t WHERE t.uni = %s', (self.uni,))
+            cur = db.engine.execute('SELECT t.c_id FROM teaches t WHERE t.uni = %s', (self.uni, ))
             self.courses = [next(Course.find(cid)) for (cid,) in cur]
 
         return self.courses
+
+    def get_reviews(self):
+        return Review.find(self.uni, 'teacher_uni')
 
     def get_departments(self):
         if not self.departments:
             cur = db.engine.execute('SELECT td.d_id FROM teachers_department td WHERE td.uni = %s', (self.uni,))
             self.departments = [(Department.find(did)) for (did,) in cur]
         return self.departments
+
+    @staticmethod
+    def search(query):
+        cur = db.engine.execute('SELECT * FROM teachers WHERE LOWER(name) LIKE %s OR LOWER(uni) LIKE %s', (query, query))
+
+        if cur.rowcount == 0:
+            return None
+
+        for (uni, name) in cur:
+            yield Teacher(uni, name)
+
+        cur.close()
 
     @staticmethod
     def find(val, field='uni'):
@@ -270,19 +341,11 @@ class Course(object):
         if not self.teachers:
             cur = db.engine.execute('SELECT ts.uni FROM teaches ts WHERE ts.c_id = %s ', (self.c_id,))
             self.teachers = [next(Teacher.find(uni)) for (uni,) in cur]
+            cur.close()
         return self.teachers
 
     def get_reviews(self):
-        if not self.reviews:
-            cur = db.engine.execute(
-                ''' SELECT * 
-                    FROM reviews r 
-                    WHERE r.c_id = %s
-                    ORDER BY r.written_on DESC 
-                '''
-                , (self.c_id, ))
-            for (_, cid, uni, t_uni, g_content, w_content, score, date) in cur:
-                yield Review(cid, uni, t_uni.strip(), g_content, w_content, score, date)
+        return Review.find(self.c_id, 'c_id')
 
     @staticmethod
     def find(val, field='c_id'):
@@ -302,11 +365,15 @@ class Course(object):
     def search(query):
         cur = db.engine.execute(
             '''SELECT c.c_id, c.name, c.abbrev
-               FROM courses c
+               FROM courses c, course_department d
                WHERE LOWER(c.name) LIKE LOWER(%s)
+               AND c.c_id = d.c_id
+               ORDER BY d.d_id, c.name ASC 
                ''', (query,))
         if cur.rowcount == 0:
             return None
 
         for (c_id, name, abbrev) in cur:
             yield Course(c_id, name, abbrev)
+
+        cur.close()

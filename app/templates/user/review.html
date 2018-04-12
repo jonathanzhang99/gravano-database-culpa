@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>Write a Review!</h1>
+    </div>
+    <div class="container">
+        <div class="col-md-6">
+            {{ wtf.quick_form(form) }}
+        </div>
+    </div>
+{% endblock %}

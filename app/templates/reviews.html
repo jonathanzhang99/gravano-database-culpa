@@ -1,18 +1,39 @@
 <ul class="list-unstyled reviews">
-    {% for review in course.get_reviews() %}
+    {% if course %} {% set entity = course %} {% elif teacher %} {% set entity = teacher %} {% endif %}
+    {% for review in entity.get_reviews() %}
         <li class="review">
             <div class="review-date">
                 <p>{{ review.written_on.strftime('%B %d, %Y') }}</p>
             </div>
 
             <div class="review-teacher">
-                <p><a href="{{ url_for('main.teacher', uni=review.t_uni) }}">{{ review.get_teacher().name }}</a></p>
+                {% if course %}
+                    <p class="is_active"><a href="{{ url_for('main.teacher', uni=review.t_uni) }}">{{ review.get_teacher().name }}</a></p>
+                {% else %}
+                    <p>{{ review.get_teacher().name }}</p>
+                {% endif %}
+            </div>
+            <div class="review-course">
+                {% if teacher %}
+                    <p class="is_active"><a href="{{ url_for('main.course', cid=review.c_id) }}">[{{ review.get_course().name }}]</a></p>
+                {% else %}
+                    <p>{{ review.get_course().name }}</p>
+                {% endif %}
             </div>
             <div class="review-general">
                 <p>{{ review.general }}</p>
             </div>
             <div class="review-workload">
                 <p>{{ review.workload }}</p>
+            </div>
+            <div class="votes">
+                <form class="form vote-form" role="form" action="{{ url_for('main.vote', rid=review.r_id) }}">
+                    {{ form.hidden_tag() }}
+                    {% with votes = review.get_votes() %}
+                    {{ form.agree(class_='agree btn btn-success', id='agree-{}'.format(review.r_id), value='Agree {}'.format(votes[0])) }}
+                    {{ form.disagree(class_='disagree btn btn-danger', id='disagree-{}'.format(review.r_id), value='Disagree {}'.format(votes[1])) }}
+                    {% endwith %}
+                </form>
             </div>
         </li>
     {% endfor %}

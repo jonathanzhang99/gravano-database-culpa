@@ -51,4 +51,5 @@ def logout():
 @auth.route('/profile')
 @login_required
 def profile():
+    # TODO: show users reviews and votes
     return 'not implemented'

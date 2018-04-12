@@ -7,10 +7,13 @@ ul.reviews > li.review {
     border-bottom: 2px solid #e0e0e0;
 }
 
-div.review-teacher {
+div.review-teacher>p.is_active, div.review-course>p.is_active {
     font-weight: bold;
 }
 
+div.review-teacher>p {
+    margin:1px;
+}
 div.review-date {
     float: right;
 }

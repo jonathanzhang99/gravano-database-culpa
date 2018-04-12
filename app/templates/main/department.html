@@ -9,7 +9,7 @@
         <h2>Classes</h2>
         <ul>
             {% for c in department.get_courses() %}
-                <li><a href="{{ url_for('main.courses', cid=c.c_id) }}">{{ c.name }}</a> </li>
+                <li><a href="{{ url_for('main.course', cid=c.c_id) }}">{{ c.name }}</a> </li>
             {% endfor %}
         </ul>
     </div>
