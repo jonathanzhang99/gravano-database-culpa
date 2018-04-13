@@ -1,5 +1,5 @@
 from flask import render_template, request, redirect, url_for, jsonify
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 from . import main
 from .forms import SearchForm, VoteForm
@@ -47,8 +47,10 @@ def review_redirect():
 
 
 @main.route('/vote/<rid>', methods=['POST'])
-@login_required
 def vote(rid):
+    print(current_user)
+    if current_user.is_anonymous:
+        return jsonify({'message':'redirect', 'url':url_for('auth.login')})
     form = VoteForm()
     message = ''
     if form.validate_on_submit():

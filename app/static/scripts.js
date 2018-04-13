@@ -16,13 +16,18 @@ $(document).ready(function() {
             url: form.attr('action'),
             data: data,
             success: data => {
-                Object.entries(data['votes']).map(([key, value], _) => {
+                console.log(data);
+                if (data.message === 'redirect'){
+                    window.location.replace(data.url);
+                    return;
+                }
+                Object.entries(data.votes).map(([key, value], _) => {
                     console.log(key);
                     console.log(value);
-                    console.log(`input#${key}-${data['rid']}`)
-                    let btn = $(`input#${key}-${data['rid']}`);
+                    console.log(`input#${key}-${data.rid}`)
+                    let btn = $(`input#${key}-${data.rid}`);
                     console.log(btn);
-                    btn.attr('value', value)
+                    btn.attr('value', value);
                 });
 
             },
