@@ -48,7 +48,6 @@ def review_redirect():
 
 @main.route('/vote/<rid>', methods=['POST'])
 def vote(rid):
-    print(current_user)
     if current_user.is_anonymous:
         return jsonify({'message':'redirect', 'url':url_for('auth.login')})
     form = VoteForm()
