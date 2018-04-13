@@ -4,6 +4,8 @@ from wtforms.validators import DataRequired, Length
 
 
 class ReviewForm(FlaskForm):
+    # TODO: add rich text format
+    #
     general = TextAreaField('General Review',
                             validators=[
                                 Length(1, 5000),

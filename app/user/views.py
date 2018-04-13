@@ -15,4 +15,5 @@ def write_review():
             general=form.general.data,
             workload=form.workload.data
         )
+        r.save()
     return render_template('user/review.html', form=form)
