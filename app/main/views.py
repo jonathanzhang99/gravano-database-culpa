@@ -49,6 +49,7 @@ def review_redirect():
 @main.route('/vote/<rid>', methods=['POST'])
 def vote(rid):
     if current_user.is_anonymous:
+        # TODO: make sure that the next variable is set for login to go to the right page
         return jsonify({'message':'redirect', 'url':url_for('auth.login')})
     form = VoteForm()
     message = ''

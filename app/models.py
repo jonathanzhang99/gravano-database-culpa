@@ -72,15 +72,18 @@ class User(UserMixin):
         if cur.rowcount == 0:
             return None
 
-        for (uni, name, year, password_hash, school, num_reviews) in cur:
-            yield User(uni=uni,
-                       first=name.split(', ')[1],
-                       last=name.split(', ')[0],
-                       year=year,
-                       password_hash=password_hash,
-                       school=school,
-                       num_reviews=num_reviews)
-        cur.close()
+        def user_generator():
+            for (uni, name, year, password_hash, school, num_reviews) in cur:
+                yield User(uni=uni,
+                           first=name.split(', ')[1],
+                           last=name.split(', ')[0],
+                           year=year,
+                           password_hash=password_hash,
+                           school=school,
+                           num_reviews=num_reviews)
+            cur.close()
+
+        return user_generator()
 
 class Vote(object):
     def __init__(self, uni, r_id, liked, voted_on=datetime.now()):
@@ -151,6 +154,13 @@ class Review(object):
         return agree, disagree
 
     @staticmethod
+    def review_generator(cur):
+        for (r_id, c_id, uni, t_uni, g_content, w_content, s_score, written_on) in cur:
+            yield Review(c_id, uni, t_uni, g_content, w_content, s_score, written_on, r_id)
+
+        cur.close()
+
+    @staticmethod
     def find(val, field='r_id'):
         query = '''SELECT * FROM reviews WHERE {} = %s ORDER BY written_on DESC'''.format(field)
 
@@ -159,10 +169,7 @@ class Review(object):
         if cur.rowcount == 0:
             return None
 
-        for (r_id, c_id, uni, t_uni, g_content, w_content, s_score, written_on) in cur:
-            yield Review(c_id, uni, t_uni, g_content, w_content, s_score, written_on, r_id)
-
-        cur.close()
+        return Review.review_generator(cur)
 
 
 class Department(object):
@@ -178,10 +185,11 @@ class Department(object):
         cur = db.engine.execute('''SELECT c.c_id, c.name, c.abbrev FROM courses c, course_department d 
                                    WHERE c.c_id = d.c_id AND d.d_id = %s
                                 ''', (self.did, ))
-        for (cid, name, abbrev) in cur:
-            yield Course(cid, name, abbrev, self)
 
-        cur.close()
+        if cur.rowcount == 0:
+            return None
+
+        return Course.courses_generator(cur)
 
     def get_teachers(self):
         cur = db.engine.execute(
@@ -191,8 +199,14 @@ class Department(object):
                 ORDER BY t.name ASC
             ''', (self.did,))
 
-        for (uni, name) in cur:
-            yield Teacher(uni, name)
+        if cur.rowcount == 0:
+            return None
+        return Teacher.teacher_generator(cur)
+
+    @staticmethod
+    def department_generator(cur):
+        for (did, name, abbrev) in cur:
+            yield Department(did, name, abbrev)
 
         cur.close()
 
@@ -204,18 +218,16 @@ class Department(object):
         if cur.rowcount == 0:
             return None
 
-        for (did, name, abbrev) in cur:
-            yield Department(did, name, abbrev)
-
-        cur.close()
+        return Department.department_generator(cur)
 
     @staticmethod
     def find_all():
         cur = db.engine.execute('SELECT * FROM departments')
-        for (did, name, abbrev) in cur:
-            yield Department(did, name, abbrev)
 
-        cur.close()
+        if cur.rowcount == 0:
+            return None
+
+        return Department.department_generator(cur)
 
     @staticmethod
     def search(query):
@@ -224,10 +236,7 @@ class Department(object):
         if cur.rowcount == 0:
             return None
 
-        for (did, name, abbrev) in cur:
-            yield Department(did, name, abbrev)
-
-        cur.close()
+        return Department.department_generator(cur)
 
 
 class Teacher(object):
@@ -267,8 +276,15 @@ class Teacher(object):
     def get_departments(self):
         if not self.departments:
             cur = db.engine.execute('SELECT td.d_id FROM teachers_department td WHERE td.uni = %s', (self.uni,))
-            self.departments = [(Department.find(did)) for (did,) in cur]
+            self.departments = [next(Department.find(did)) for (did,) in cur]
         return self.departments
+
+    @staticmethod
+    def teacher_generator(cur):
+        for (uni, name) in cur:
+            yield Teacher(uni, name)
+
+        cur.close()
 
     @staticmethod
     def search(query):
@@ -276,11 +292,7 @@ class Teacher(object):
 
         if cur.rowcount == 0:
             return None
-
-        for (uni, name) in cur:
-            yield Teacher(uni, name)
-
-        cur.close()
+        return Teacher.teacher_generator(cur)
 
     @staticmethod
     def find(val, field='uni'):
@@ -291,8 +303,7 @@ class Teacher(object):
         if cur.rowcount == 0:
             return None
 
-        for (uni, name) in cur:
-            yield Teacher(uni, name)
+        return Teacher.teacher_generator(cur)
 
 
 class Course(object):
@@ -345,6 +356,13 @@ class Course(object):
         return Review.find(self.c_id, 'c_id')
 
     @staticmethod
+    def courses_generator(cur):
+        for (c_id, name, abbrev) in cur:
+            yield Course(c_id, name, abbrev)
+
+        cur.close()
+
+    @staticmethod
     def find(val, field='c_id'):
         query = 'SELECT * FROM courses WHERE {} = %s'.format(field)
 
@@ -353,10 +371,8 @@ class Course(object):
         if cur.rowcount == 0:
             return None
 
-        for (c_id, name, abbrev) in cur:
-            yield Course(c_id, name, abbrev)
+        return Course.courses_generator(cur)
 
-        cur.close()
 
     @staticmethod
     def search(query):
@@ -370,7 +386,4 @@ class Course(object):
         if cur.rowcount == 0:
             return None
 
-        for (c_id, name, abbrev) in cur:
-            yield Course(c_id, name, abbrev)
-
-        cur.close()
+        return Course.courses_generator(cur)
