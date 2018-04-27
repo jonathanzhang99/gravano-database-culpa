@@ -182,7 +182,7 @@ class Department(object):
         db.engine.execute('INSERT INTO departments VALUES (%s, %s)', (self.did, self.name, self.abbrev))
 
     def get_courses(self):
-        cur = db.engine.execute('''SELECT c.c_id, c.name, c.abbrev FROM courses c, course_department d 
+        cur = db.engine.execute('''SELECT c.* FROM courses c, course_department d 
                                    WHERE c.c_id = d.c_id AND d.d_id = %s
                                 ''', (self.did, ))
 
@@ -307,10 +307,11 @@ class Teacher(object):
 
 
 class Course(object):
-    def __init__(self, c_id, name, abbrev, departments=None, teachers=None):
+    def __init__(self, c_id, name, abbrev, views, departments=None, teachers=None):
         self.c_id = c_id
         self.name = name
         self.abbrev = abbrev
+        self.views = views
         self.departments = []
         self.teachers = []
         self.reviews = []
@@ -355,10 +356,14 @@ class Course(object):
     def get_reviews(self):
         return Review.find(self.c_id, 'c_id')
 
+    def add_view(self):
+        db.engine.execute('UPDATE courses SET views = array_append(views, %s) WHERE c_id = %s',
+                          (str(datetime.now()), self.c_id))
+
     @staticmethod
     def courses_generator(cur):
-        for (c_id, name, abbrev) in cur:
-            yield Course(c_id, name, abbrev)
+        for (c_id, name, abbrev, views) in cur:
+            yield Course(c_id, name, abbrev, views)
 
         cur.close()
 
@@ -377,7 +382,7 @@ class Course(object):
     @staticmethod
     def search(query):
         cur = db.engine.execute(
-            '''SELECT c.c_id, c.name, c.abbrev
+            '''SELECT c.*
                FROM courses c, course_department d
                WHERE LOWER(c.name) LIKE LOWER(%s)
                AND c.c_id = d.c_id

@@ -32,7 +32,9 @@ def department(did):
 @main.route('/courses/<cid>', methods=['GET', 'POST'])
 def course(cid):
     form = VoteForm()
-    return render_template('main/course.html', course=next(Course.find(cid)), form=form)
+    course = next(Course.find(cid))
+    course.add_view()
+    return render_template('main/course.html', course=course, form=form)
 
 
 @main.route('/teachers/<uni>', methods=['GET', 'POST'])
